@@ -16,7 +16,7 @@
 		"php": ">=5.4.0"
 	},
 	"autoload": {
-		"psr-0": { "ClubDeuce_": "includes/" }
+		"psr-0": { "Clubdeuce\\WPLib\\Components\\": "includes/" }
 	},
 	"support": {
 		"issues": "https://github.com/clubdeuce/wplib-olm-google-maps/issues",
