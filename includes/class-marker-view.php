@@ -3,9 +3,9 @@
 namespace Clubdeuce\WPLib\Components\GoogleMaps;
 
 /**
- * Class Location_Model
+ * Class Marker_View
  * @package Clubdeuce\WPLib\Components\GoogleMaps
  */
-class Location_Model extends \WPLib_Model_Base {
+class Marker_View extends \WPLib_View_Base  {
 
 }
