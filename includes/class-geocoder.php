@@ -39,7 +39,7 @@ class Geocoder {
 
     /**
      * @param  string $address
-     * @return array|\WP_Error
+     * @return Position|\WP_Error
      */
     function geocode( $address ) {
 
@@ -48,7 +48,7 @@ class Geocoder {
         $return = $this->_make_request( $url );
 
         if ( ! is_wp_error( $return ) ) {
-            $return = $this->_parse_response( $return );
+            $return = $this->_make_position( $return );
         }
 
         return $return;
@@ -59,7 +59,7 @@ class Geocoder {
      * @param  string $address
      * @return string
      */
-    private function _make_url( $address ) {
+    private function _make_url($address ) {
 
         return sprintf(
             'https://maps.googleapis.com/maps/api/geocode/json?address=%1$s&key=%2$s',
@@ -70,21 +70,21 @@ class Geocoder {
     }
 
     /**
-     * Convert the response body into an array containing the latitude/longitude.
+     * Convert the response body into a Position object
      *
-     * @param  array $response
-     * @return array Contains lat and lng as key/value pairs
+     * @param  array    $response
+     * @return Position
      */
-    private function _parse_response( $response ) {
+    private function _make_position( $response ) {
 
-        $return = array();
+        $position = new Position();
 
         if ( isset( $response['results'][0]['geometry']['location'] ) ) {
-            $return['lat']  = $response['results'][0]['geometry']['location']['lat'];
-            $return['lng'] = $response['results'][0]['geometry']['location']['lng'];
+            $position->lat = $response['results'][0]['geometry']['location']['lat'];
+            $position->lng = $response['results'][0]['geometry']['location']['lng'];
         }
 
-        return $return;
+        return $position;
 
     }
 
@@ -122,9 +122,12 @@ class Geocoder {
 
         $cache_key = md5( serialize( $url ) );
 
-        if ( ! $data = wp_cache_get( $cache_key ) ) {
+        if ( ! $data = \WPLib::cache_get( $cache_key, 'maps' ) ) {
             $data = wp_remote_get( $url );
-            wp_cache_add( $cache_key, $data, 300 );
+        }
+
+        if ( ! is_wp_error( $data ) ) {
+            \WPLib::cache_set( $cache_key, $data, 'maps' );
         }
 
         return $data;
