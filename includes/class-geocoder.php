@@ -39,54 +39,19 @@ class Geocoder {
 
     /**
      * @param  string $address
-     * @return bool
-     */
-    function flush_item_from_cache( $address ) {
-
-        return wp_cache_delete( $this->_make_cache_key( $this->_make_url( $address ) ) );
-
-    }
-
-    /**
-     * @param  string $address
      * @return array|\WP_Error
      */
     function geocode( $address ) {
 
-        $url       = $this->_make_url( $address );
-        $cache_key = $this->_make_cache_key( $url );
+        $url = $this->_make_url( $address );
 
-        if ( ! $return = wp_cache_get( $cache_key ) ) {
-            if ( wp_http_validate_url( $url ) ) {
-                $request = wp_remote_get( $url );
-
-                if ( 200 == $request['response']['code'] ) {
-                    $return = json_decode( $request['body'], true );
-                    wp_cache_set( $cache_key, $return );
-                }
-
-                if ( ! 200 == $request['response']['code'] ) {
-                    $return = new \WP_Error( $request['response']['code'], $request['response']['message'] );
-                }
-
-            }
-        }
+        $return = $this->_make_request( $url );
 
         if ( ! is_wp_error( $return ) ) {
             $return = $this->_parse_response( $return );
         }
 
         return $return;
-
-    }
-
-    /**
-     * @param  string $url
-     * @return string
-     */
-    private function _make_cache_key( $url ) {
-
-        return md5( serialize( $url ) );
 
     }
 
@@ -108,7 +73,7 @@ class Geocoder {
      * Convert the response body into an array containing the latitude/longitude.
      *
      * @param  array $response
-     * @return array
+     * @return array Contains lat and lng as key/value pairs
      */
     private function _parse_response( $response ) {
 
@@ -120,6 +85,49 @@ class Geocoder {
         }
 
         return $return;
+
+    }
+
+
+    /**
+     * @param $url
+     * @return array|\WP_Error
+     */
+    private function _make_request( $url ) {
+
+        $return = new \WP_Error( 1, 'Invalid URL', $url );
+
+        if ( wp_http_validate_url( $url ) ) {
+            $request = $this->_get_data( $url );
+
+            if ( 200 == $request['response']['code'] ) {
+                $return = json_decode( $request['body'], true );
+            }
+
+            if ( ! 200 == $request['response']['code'] ) {
+                $return = new \WP_Error( $request['response']['code'], $request['response']['message'] );
+            }
+
+        }
+
+        return $return;
+
+    }
+
+    /**
+     * @param $url
+     * @return array|bool|mixed|\WP_Error
+     */
+    private function _get_data( $url ) {
+
+        $cache_key = md5( serialize( $url ) );
+
+        if ( ! $data = wp_cache_get( $cache_key ) ) {
+            $data = wp_remote_get( $url );
+            wp_cache_add( $cache_key, $data, 300 );
+        }
+
+        return $data;
 
     }
 
